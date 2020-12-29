@@ -5,7 +5,7 @@ import './IngredientForm.css';
 
 const IngredientForm = React.memo(props => {
 
-  const inputState = useState({title: '', amount: ''});
+  const [inputState, setInputState] = useState({title: '', amount: ''});
 
   const submitHandler = event => {
     event.preventDefault();
@@ -19,13 +19,13 @@ const IngredientForm = React.memo(props => {
           <div className="form-control">
             <label htmlFor="title">Name</label>
             <input type="text" id="title" 
-              value = {inputState[0].title} 
+              value = {inputState.title} 
               onChange={event => {
                 // we store the event.target.value before we enter the closure
                 // because of the way React events (synthetic event re pulling) works
                 const titleValue = event.target.value;
                 ///////////////////////////////////////////////
-                inputState[1]( prevInputState =>({
+                setInputState( prevInputState =>({
                   title: titleValue, 
                   amount: prevInputState.amount
                 }))}}/>
@@ -33,10 +33,10 @@ const IngredientForm = React.memo(props => {
           <div className="form-control">
             <label htmlFor="amount">Amount</label>
             <input type="number" id="amount" 
-              value = {inputState[0].amount} 
+              value = {inputState.amount} 
               onChange={event => {
                 const amountValue = event.target.value;
-                inputState[1]( prevInputState=>({
+                setInputState( prevInputState=>({
                   amount: amountValue,
                   title:prevInputState.title
                 }))}}/>
