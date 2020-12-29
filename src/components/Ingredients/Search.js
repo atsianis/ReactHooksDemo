@@ -14,7 +14,7 @@ const Search = React.memo((props) => {
   const inputRef = useRef();
 
   useEffect(() => {
-    setTimeout(() => {
+    const timer = setTimeout(() => {
       // We need to undrstand how CLOSURES work 
       // in order to understand how the following line makes sense
       // 'enteredFilter' here is not going to be updated on every key stroke. 
@@ -49,6 +49,9 @@ const Search = React.memo((props) => {
             }
             props.onLoadIngredients(loadedIngredients);
           });
+      }
+      return ()=>{
+        clearTimeout(timer);
       }
     }, 500);
   }, [enteredFilter, onLoadIngredients]);
