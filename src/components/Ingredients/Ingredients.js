@@ -16,15 +16,31 @@ const ingredientReducer = ( currentIngredients, action ) => {
     default:
       throw new Error('Should not get here');
   }
-}
+};
+
+const httpReducer = (httpState, action)=>{
+  switch (action.type){
+    case 'SEND':
+      return {loading: true, error: null}
+    case 'RESPONSE':
+      return {...httpState, loading: false}
+    case 'ERROR':
+      return { loading: false, error: action.payload}
+    case 'CLEAR':
+      return {...httpState, error: null}
+    default:
+      throw new Error('Should not reach this point');
+  }
+};
 
 function Ingredients() {
 
   const [userIngredients, dispatch] = useReducer(ingredientReducer, []);
-
   // const [ingredients, setIngredients] = useState([]);
-  const [isLoading, setIsLoading] = useState(false);
-  const [error, setError] = useState();
+
+  const [httpState, dispatchHttp] = useReducer(httpReducer,{loading: false, error: false});
+  // const [isLoading, setIsLoading] = useState(false);
+  // const [error, setError] = useState();
 
   const filteredIngredientsHandler = useCallback( filteredIngredients => 
     //setIngredients(filteredIngredients)
@@ -35,7 +51,8 @@ function Ingredients() {
   , []);
 
   const addIngredientHandler = (ingredient) => {
-    setIsLoading(true);
+    dispatchHttp({type: 'SEND'});
+    // setIsLoading(true);
     fetch(
       "https://reacthooksdemo-4f235-default-rtdb.firebaseio.com/ingredients.json",
       {
@@ -45,7 +62,8 @@ function Ingredients() {
       }
     )
       .then((response) => {
-        setIsLoading(false);
+        dispatchHttp({type: 'RESPONSE'});
+        // setIsLoading(false);
         console.log(response);
         // response.json return a Promise that contains the body of the response !!!
         return response.json();
@@ -63,22 +81,31 @@ function Ingredients() {
           type:'ADD',
           payload:{id: responseData.name, ...ingredient}
         })
+      }).catch( error => {
+        dispatchHttp({
+          type: 'ERROR',
+          payload: error.message
+        })
       });
   };
 
   const clearError =()=> {
-    setError(null);
+    dispatchHttp({type: 'CLEAR'})
+    //setError(null);
   }
 
   const removeIngredientHandler = (id) => {
-    setIsLoading(true);
+    dispatchHttp({type: 'SEND'});
+    // setIsLoading(true);
     fetch(
       `https://reacthooksdemo-4f235-default-rtdb.firebaseio.com/ingredients/${id}.json`,
       {
         method: "DELETE",
       }
     ).then( response => {
-      setIsLoading(false);
+      dispatchHttp({type: 'RESPONSE'})
+      // setIsLoading(false);
+      
       // setIngredients((previousIngredients) =>
       // previousIngredients.filter((ingredient, __) => ingredient.id !== id)
     // )
@@ -88,18 +115,20 @@ function Ingredients() {
     })
   }
     ).catch (error => {
+      dispatch({type: 'ERROR', payload: error.mesage})
+      
       // Check React's State Batching concept
-      setError(error.message);
-      setIsLoading(false);
+      // setError(error.message);
+      // setIsLoading(false);
     })
     
   };
 
   return (
     <div className="App">
-      <IngredientForm onAddIngredient={addIngredientHandler} loading={isLoading}/>
+      <IngredientForm onAddIngredient={addIngredientHandler} loading={httpState.loading}/>
 
-      {error && <ErrorModal onClose={clearError}>{error}</ErrorModal>}
+      {httpState.error && <ErrorModal onClose={clearError}>{httpState.error}</ErrorModal>}
 
       <section>
         <Search onLoadIngredients={filteredIngredientsHandler}/>
