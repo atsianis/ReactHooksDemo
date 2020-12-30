@@ -50,7 +50,7 @@ function Ingredients() {
     })
   , []);
 
-  const addIngredientHandler = (ingredient) => {
+  const addIngredientHandler = useCallback((ingredient) => {
     dispatchHttp({type: 'SEND'});
     // setIsLoading(true);
     fetch(
@@ -87,14 +87,14 @@ function Ingredients() {
           payload: error.message
         })
       });
-  };
+  }, []);
 
   const clearError =()=> {
     dispatchHttp({type: 'CLEAR'})
     //setError(null);
   }
 
-  const removeIngredientHandler = (id) => {
+  const removeIngredientHandler = useCallback((id) => {
     dispatchHttp({type: 'SEND'});
     // setIsLoading(true);
     fetch(
@@ -122,7 +122,7 @@ function Ingredients() {
       // setIsLoading(false);
     })
     
-  };
+  }, []);
 
   return (
     <div className="App">
