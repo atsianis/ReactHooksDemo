@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useCallback, useReducer } from "react";
+import useHttp from '../../hooks/http';
 
 import IngredientForm from "./IngredientForm";
 import IngredientList from "./IngredientList";
@@ -18,29 +19,27 @@ const ingredientReducer = ( currentIngredients, action ) => {
   }
 };
 
-const httpReducer = (httpState, action)=>{
-  switch (action.type){
-    case 'SEND':
-      return {loading: true, error: null}
-    case 'RESPONSE':
-      return {...httpState, loading: false}
-    case 'ERROR':
-      return { loading: false, error: action.payload}
-    case 'CLEAR':
-      return {...httpState, error: null}
-    default:
-      throw new Error('Should not reach this point');
-  }
-};
+
 
 function Ingredients() {
 
   const [userIngredients, dispatch] = useReducer(ingredientReducer, []);
   // const [ingredients, setIngredients] = useState([]);
 
-  const [httpState, dispatchHttp] = useReducer(httpReducer,{loading: false, error: false});
+  const {isLoading, error, data, sendRequest, extra, identifier, clear} = useHttp();
+
+  
   // const [isLoading, setIsLoading] = useState(false);
   // const [error, setError] = useState();
+
+  useEffect( ()=> {
+    if( !isLoading && !error && identifier === 'REMOVE' ){
+      dispatch({type: 'DELETE', payload: extra});
+    }else if ( !isLoading && !error && identifier === 'ADD') {
+      dispatch({type: 'ADD', payload:{id: data.name, ...extra}});
+    }
+    
+  }, [data, extra, identifier, isLoading, error])
 
   const filteredIngredientsHandler = useCallback( filteredIngredients => 
     //setIngredients(filteredIngredients)
@@ -51,85 +50,30 @@ function Ingredients() {
   , []);
 
   const addIngredientHandler = useCallback((ingredient) => {
-    dispatchHttp({type: 'SEND'});
-    // setIsLoading(true);
-    fetch(
+    sendRequest(
       "https://reacthooksdemo-4f235-default-rtdb.firebaseio.com/ingredients.json",
-      {
-        method: "POST",
-        body: JSON.stringify({ ...ingredient }),
-        headers: { "Content-Type": "application/json" },
-      }
-    )
-      .then((response) => {
-        dispatchHttp({type: 'RESPONSE'});
-        // setIsLoading(false);
-        console.log(response);
-        // response.json return a Promise that contains the body of the response !!!
-        return response.json();
-      })
-      .then((responseData) => {
-        console.log(responseData);
-        // Firebase automnatically gives every posted element a key, that is store
-        // under the name property !
-        // setIngredients((previousIngredients) => [
-        //   ...previousIngredients,
-        //   { id: responseData.name, ...ingredient },
-        // ]);
-
-        dispatch({
-          type:'ADD',
-          payload:{id: responseData.name, ...ingredient}
-        })
-      }).catch( error => {
-        dispatchHttp({
-          type: 'ERROR',
-          payload: error.message
-        })
-      });
-  }, []);
-
-  const clearError =()=> {
-    dispatchHttp({type: 'CLEAR'})
-    //setError(null);
-  }
+      'POST',
+      JSON.stringify(ingredient),
+      ingredient,
+      'ADD'
+    );
+  }, [sendRequest]);
 
   const removeIngredientHandler = useCallback((id) => {
-    dispatchHttp({type: 'SEND'});
-    // setIsLoading(true);
-    fetch(
-      `https://reacthooksdemo-4f235-default-rtdb.firebaseio.com/ingredients/${id}.json`,
-      {
-        method: "DELETE",
-      }
-    ).then( response => {
-      dispatchHttp({type: 'RESPONSE'})
-      // setIsLoading(false);
-      
-      // setIngredients((previousIngredients) =>
-      // previousIngredients.filter((ingredient, __) => ingredient.id !== id)
-    // )
-    dispatch({
-      type: 'DELETE',
-      payload: id
-    })
-  }
-    ).catch (error => {
-      dispatch({type: 'ERROR', payload: error.mesage})
-      
-      // Check React's State Batching concept
-      // setError(error.message);
-      // setIsLoading(false);
-    })
-    
-  }, []);
+    sendRequest(
+      `https://reacthooksdemo-4f235-default-rtdb.firebaseio.com/ingredients/${id}.json`, 
+      'DELETE',
+      null,
+      id,
+      'REMOVE',
+    );
+  }, [sendRequest]);
 
   return (
     <div className="App">
-      <IngredientForm onAddIngredient={addIngredientHandler} loading={httpState.loading}/>
+      {error && <ErrorModal onClose={clear}>{error}</ErrorModal>}
 
-      {httpState.error && <ErrorModal onClose={clearError}>{httpState.error}</ErrorModal>}
-
+      <IngredientForm onAddIngredient={addIngredientHandler} loading={isLoading}/>
       <section>
         <Search onLoadIngredients={filteredIngredientsHandler}/>
         <IngredientList
