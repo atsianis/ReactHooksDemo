@@ -10,7 +10,7 @@ const ingredientReducer = ( currentIngredients, action ) => {
     case 'SET':
       return action.payload
     case 'ADD':
-      return [...ingredients, action.payload]
+      return [...currentIngredients, action.payload]
     case 'DELETE':
       return currentIngredients.filter( ing=> ing.id !== action.payload)
     default:
@@ -22,12 +22,16 @@ function Ingredients() {
 
   const [userIngredients, dispatch] = useReducer(ingredientReducer, []);
 
-  const [ingredients, setIngredients] = useState([]);
+  // const [ingredients, setIngredients] = useState([]);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState();
 
   const filteredIngredientsHandler = useCallback( filteredIngredients => 
-    setIngredients(filteredIngredients)
+    //setIngredients(filteredIngredients)
+    dispatch({
+      type: 'SET',
+      payload: filteredIngredients
+    })
   , []);
 
   const addIngredientHandler = (ingredient) => {
@@ -50,10 +54,15 @@ function Ingredients() {
         console.log(responseData);
         // Firebase automnatically gives every posted element a key, that is store
         // under the name property !
-        setIngredients((previousIngredients) => [
-          ...previousIngredients,
-          { id: responseData.name, ...ingredient },
-        ]);
+        // setIngredients((previousIngredients) => [
+        //   ...previousIngredients,
+        //   { id: responseData.name, ...ingredient },
+        // ]);
+
+        dispatch({
+          type:'ADD',
+          payload:{id: responseData.name, ...ingredient}
+        })
       });
   };
 
@@ -70,9 +79,14 @@ function Ingredients() {
       }
     ).then( response => {
       setIsLoading(false);
-      setIngredients((previousIngredients) =>
-      previousIngredients.filter((ingredient, __) => ingredient.id !== id)
-    )}
+      // setIngredients((previousIngredients) =>
+      // previousIngredients.filter((ingredient, __) => ingredient.id !== id)
+    // )
+    dispatch({
+      type: 'DELETE',
+      payload: id
+    })
+  }
     ).catch (error => {
       // Check React's State Batching concept
       setError(error.message);
@@ -90,7 +104,7 @@ function Ingredients() {
       <section>
         <Search onLoadIngredients={filteredIngredientsHandler}/>
         <IngredientList
-          ingredients={ingredients}
+          ingredients={userIngredients}
           onRemoveItem={(id) => {
             removeIngredientHandler(id);
           }}
